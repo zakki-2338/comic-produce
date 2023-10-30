@@ -16,8 +16,9 @@
     </form>
     <button
       id="return-top-from-search"
+      class="general-button"
       type="button"
-      v-on:click="returnTopFromSearch"
+      @click="returnTopFromSearch"
     >
       トップページへ戻る
     </button>
@@ -30,9 +31,15 @@
             :key="comic.id"
             class="d-flex"
           >
-            <a :href="comic.trial_read_url" target="_blank">
+            <a @click="showExternalLinkConfirmationModal(comic.trialReadUrl)">
               <img :src="comic.comicImage" alt="image">
             </a>
+            <link-transition-confirm-modal
+              v-if="externalLinkConfirmationModal"
+              :externalLinkUrl="selectedExternalLinkUrl"
+              @confirm="externalLinkapproval"
+              @cancel="cancelExternalLinkTransition">
+            </link-transition-confirm-modal>
             <div>
               <h4>{{ comic.title }}</h4>
               <p>{{ comic.author }}</p>
@@ -45,18 +52,18 @@
                 >
                   削除
                 </button>
-                <confirm-modal
-                  v-if="showModal"
+                <delete-confirm-modal
+                  v-if="deleteModal"
                   :id="selectedComicId"
                   @confirm="deleteComic"
                   @cancel="cancelDelete">
-                </confirm-modal>
+                </delete-confirm-modal>
               </div>
             </div>
           </li>
         </ul>
       </div>
-      <div v-else id="resultZero">
+      <div v-else id="result-zero">
         <p>「{{ preSearch }}」を含む作品が見つかりませんでした。</p>
       </div>
     </section>
@@ -64,11 +71,13 @@
 </template>
 
 <script>
-import ConfirmModal from '@/components/ConfirmModal.vue';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal.vue';
+import LinkTransitionConfirmModal from '@/components/LinkTransitionConfirmModal.vue';
 
 export default {
   components: {
-    ConfirmModal,
+    DeleteConfirmModal,
+    LinkTransitionConfirmModal,
   },
 
   props: {
@@ -90,8 +99,10 @@ export default {
     return {
       searchWord: this.comicOrAuthor,
       preSearch: this.comicOrAuthor,
-      showModal: false,
+      deleteModal: false,
       selectedComicId: null,
+      externalLinkConfirmationModal: false,
+      selectedExternalLinkUrl: null,
     };
   },
 
@@ -118,16 +129,37 @@ export default {
 
     showConfirmationModal(id) {
       this.selectedComicId = id;
-      this.showModal = true;
+      this.deleteModal = true;
+      this.$emit('show-modal-overlay');
     },
 
     deleteComic(comicId) {
-      this.showModal = false;
+      this.deleteModal = false;
       this.$emit('delete-comic', comicId);
     },
 
     cancelDelete() {
-      this.showModal = false;
+      this.deleteModal = false;
+      this.$emit('hide-modal-overlay');
+      console.log('キャンセルしました');
+    },
+
+    showExternalLinkConfirmationModal(linkUrl) {
+      this.selectedExternalLinkUrl = linkUrl;
+      this.externalLinkConfirmationModal = true;
+      this.$emit('show-modal-overlay');
+    },
+
+    externalLinkapproval(externalLinkUrl) {
+      window.open(externalLinkUrl, '_blank');
+      this.externalLinkConfirmationModal = false;
+      this.$emit('hide-modal-overlay');
+    },
+
+    cancelExternalLinkTransition() {
+      this.externalLinkConfirmationModal = false;
+      this.selectedExternalLinkUrl = null;
+      this.$emit('hide-modal-overlay');
       console.log('キャンセルしました');
     },
   },
@@ -136,60 +168,71 @@ export default {
 </script>
 
 <style scoped>
+/* 検索ページ個別 */
 #search-result {
   width: 90%;
-  max-width: 720px;
+  max-width: 72rem;
   margin: 3rem auto 3rem;
 }
+
 #search-result h2 {
   text-align: center;
 }
-#search-result form {
+
+#search-result .search-box {
   margin-top: 1.5rem;
   padding: 1.5rem;
-  background-color: #C8C8C8;
-  border-radius: 10px;
+  background-color: #E1E1E1;
+  border-radius: 1rem;
   position: relative;
 }
-#search-result form input {
+#search-result .search-box input {
   display: block;
-  padding-right: 2rem;
   width: 100%;
-  height: 32px;
-  border-radius: 5px;
+  height: 3.2rem;
+  border-radius: 0.5rem;
+  border: 0.1rem solid black;
 }
-#search-result form input:focus {
-  outline: solid 0.1rem black;
+#search-result .search-box input:focus {
+  border: 0.2rem solid black;
+}
+@media (min-width : 768px) {
+  #search-result .search-box input::-webkit-search-cancel-button,
+  #search-result .search-box input::-webkit-search-clear-button {
+    position: absolute;
+    right: 3.5%;
+  }
 }
 #search-result .search-box button {
-  border: none;
-  outline: none;
-  background: none;
   position: absolute;
-  right: 30px;
-}
-#search-result #return-top-from-search {
-  display: block;
-  margin: 0 0 0 auto;
-  padding: 0.4rem 1rem;
-  font-size: 1rem;
-  border-radius: 10px;
+  right: 5%;
+  outline: none;
   border: none;
-  background-color: #4c586f;
-  color: #fff;
+  background: none;
+  color: black;
 }
-#search-result #return-top-from-search:hover {
-  opacity: 0.8;
+#search-result .search-box button:focus {
+  opacity: 0.5;
 }
+@media (min-width : 768px) {
+  #search-result .search-box button {
+    right: 2.5%;
+  }
+  #search-result .search-box button:hover {
+    opacity: 0.5;
+  }
+}
+
+#search-result #return-top-from-search {
+  margin: 5rem 0 0 auto;
+}
+
 #search-result section {
-  margin: 3rem auto 0;
-}
-#search-result section ul {
-  margin: 0;
+  margin: 0 auto;
 }
 #search-result section li {
   padding: 1rem 0 1rem;
-  border-top: solid 1px #DCDCDC;
+  border-top: 0.1rem solid #DCDCDC;
 }
 #search-result section li a{
   width: 20%;
@@ -199,20 +242,14 @@ export default {
   width: 100%;
   object-fit: cover;
 }
-#search-result section li div {
+#search-result section li > div {
   width: 80%;
-  padding-left: 1rem;
-}
-#search-result section li div p {
-  margin-top: 0.5;
-}
-#search-result section li div div {
-  padding: 0;
+  margin-left: 1rem;
 }
 #search-result section li:last-child {
-  border-bottom: solid 1px #DCDCDC;
+  border-bottom: 0.1rem solid #DCDCDC;
 }
-#search-result section #resultZero p {
+#search-result section #result-zero p {
   padding: 1rem 0 1rem;
   border-top: solid 1px #DCDCDC;
   border-bottom: solid 1px #DCDCDC;

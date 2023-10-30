@@ -3,8 +3,9 @@
     <h2>{{ genreText }}</h2>
     <button
       id="return-top-from-genre"
+      class="general-button"
       type="button"
-      v-on:click="returnTopFromGenre"
+      @click="returnTopFromGenre"
     >
       トップページへ戻る
     </button>
@@ -16,9 +17,15 @@
             :key="comic.id"
             class="d-flex"
           >
-            <a :href="comic.trial_read_url" target="_blank">
+            <a @click="showExternalLinkConfirmationModal(comic.trialReadUrl)">
               <img :src="comic.comicImage" alt="image">
             </a>
+            <link-transition-confirm-modal
+              v-if="externalLinkConfirmationModal"
+              :externalLinkUrl="selectedExternalLinkUrl"
+              @confirm="externalLinkapproval"
+              @cancel="cancelExternalLinkTransition">
+            </link-transition-confirm-modal>
             <div>
               <h4>{{ comic.title }}</h4>
               <p>{{ comic.author }}</p>
@@ -31,30 +38,32 @@
                 >
                   削除
                 </button>
-                <confirm-modal
-                  v-if="showModal"
+                <delete-confirm-modal
+                  v-if="deleteModal"
                   :id="selectedComicId"
                   @confirm="deleteComic"
                   @cancel="cancelDelete">
-                </confirm-modal>
+                </delete-confirm-modal>
               </div>
             </div>
           </li>
         </ul>
       </div>
-      <div v-else id="resultZero">
-        <p>「スポーツ」ジャンル作品が見つかりませんでした。</p>
+      <div v-else id="result-zero">
+        <p>{{ genreText }}ジャンルの作品が見つかりませんでした。</p>
       </div>
     </section>
   </div>
 </template>
 
 <script>
-import ConfirmModal from '@/components/ConfirmModal.vue';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal.vue';
+import LinkTransitionConfirmModal from '@/components/LinkTransitionConfirmModal.vue';
 
 export default {
   components: {
-    ConfirmModal,
+    DeleteConfirmModal,
+    LinkTransitionConfirmModal,
   },
 
   props: {
@@ -74,8 +83,10 @@ export default {
 
   data() {
     return {
-      showModal: false,
+      deleteModal: false,
       selectedComicId: null,
+      externalLinkConfirmationModal: false,
+      selectedExternalLinkUrl: null,
     };
   },
 
@@ -98,6 +109,8 @@ export default {
         return 'ホラー';
       } if (this.genreWord === 'romance') {
         return '恋愛';
+      } if (this.genreWord === 'other') {
+        return 'その他';
       }
       return '';
     },
@@ -110,16 +123,37 @@ export default {
 
     showConfirmationModal(id) {
       this.selectedComicId = id;
-      this.showModal = true;
+      this.deleteModal = true;
+      this.$emit('show-modal-overlay');
     },
 
     deleteComic(comicId) {
-      this.showModal = false;
+      this.deleteModal = false;
       this.$emit('delete-comic', comicId);
     },
 
     cancelDelete() {
-      this.showModal = false;
+      this.deleteModal = false;
+      this.$emit('hide-modal-overlay');
+      console.log('キャンセルしました');
+    },
+
+    showExternalLinkConfirmationModal(linkUrl) {
+      this.selectedExternalLinkUrl = linkUrl;
+      this.externalLinkConfirmationModal = true;
+      this.$emit('show-modal-overlay');
+    },
+
+    externalLinkapproval(externalLinkUrl) {
+      window.open(externalLinkUrl, '_blank');
+      this.externalLinkConfirmationModal = false;
+      this.$emit('hide-modal-overlay');
+    },
+
+    cancelExternalLinkTransition() {
+      this.externalLinkConfirmationModal = false;
+      this.selectedExternalLinkUrl = null;
+      this.$emit('hide-modal-overlay');
       console.log('キャンセルしました');
     },
 
@@ -131,41 +165,31 @@ export default {
   mounted() {
     this.scrollToTop();
   },
-
 };
 </script>
 
 <style scoped>
+/* ジャンルページ個別 */
 #genre-result {
   width: 90%;
-  max-width: 720px;
+  max-width: 72rem;
   margin: 3rem auto 3rem;
 }
+
 #genre-result h2 {
   text-align: center;
 }
+
 #genre-result #return-top-from-genre {
-  display: block;
-  margin: 3rem 0 0 auto;
-  padding: 0.4rem 1rem;
-  font-size: 1rem;
-  border-radius: 10px;
-  border: none;
-  background-color: #4c586f;
-  color: #fff;
+  margin: 5rem 0 0 auto;
 }
-#genre-result #return-top-from-genre:hover {
-  opacity: 0.8;
-}
+
 #genre-result section {
   margin: 0 auto;
 }
-#genre-result section ul {
-  margin: 0;
-}
 #genre-result section li {
   padding: 1rem 0 1rem;
-  border-top: solid 1px #DCDCDC;
+  border-top: 0.1rem solid #DCDCDC;
 }
 #genre-result section li a{
   width: 20%;
@@ -175,23 +199,18 @@ export default {
   width: 100%;
   object-fit: cover;
 }
-#genre-result section li div {
+#genre-result section li > div {
   width: 80%;
-  padding-left: 1rem;
-}
-#genre-result section li div p {
-  margin-top: 0.5;
-}
-#genre-result section li div div {
-  padding-left: 0;
+  margin-left: 1rem;
 }
 #genre-result section li:last-child {
-  border-bottom: solid 1px #DCDCDC;
+  border-bottom: 0.1rem solid #DCDCDC;
 }
-#genre-result section #resultZero p {
+
+#genre-result section #result-zero p {
   padding: 1rem 0 1rem;
-  border-top: solid 1px #DCDCDC;
-  border-bottom: solid 1px #DCDCDC;
+  border-top: 0.1rem solid #DCDCDC;
+  border-bottom: 0.1rem solid #DCDCDC;
   text-align: center;
 }
 </style>

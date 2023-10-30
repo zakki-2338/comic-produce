@@ -2,6 +2,7 @@
   <div id="comic-registration">
     <button
       v-b-modal.comic-registration-modal
+      class="general-button"
     >
       <i class="fa-solid fa-plus"></i>漫画登録
     </button>
@@ -54,18 +55,18 @@
           </b-form-invalid-feedback>
         </b-form-group>
         <b-form-group class="mb-8">
-          <label for="trial_read_url">試し読みページURL</label>
+          <label for="trialReadUrl">試し読みページURL</label>
           <b-form-input
-            id="trial_read_url"
-            v-model="trial_read_url"
+            id="trialReadUrl"
+            v-model="trialReadUrl"
             required
             :state="isValidTrialReadUrl"
             type="text"
-            aria-describedby="trial_read_url-error"
+            aria-describedby="trialReadUrl-error"
           >
           </b-form-input>
           <b-form-invalid-feedback
-            id="trial_read_url-error"
+            id="trialReadUrl-error"
             aria-label="試し読みページURL入力エラー"
             role="alert"
           >
@@ -77,6 +78,7 @@
           <p v-if="!recommendationQuantity">※おすすめの登録は7件までです。現在7件なので普通のみ選択できます。</p>
             <b-form-select
               id="recommendation"
+              class="custom-b-select-option"
               v-model="recommendation"
               required
               :state="isValidRecommendation"
@@ -99,6 +101,7 @@
           <p v-if="!popularityQuantity">※人気の登録は5件までです。現在5件なので普通のみ選択できます。</p>
             <b-form-select
               id="popularity"
+              class="custom-b-select-option"
               v-model="popularity"
               required
               :state="isValidPopularity"
@@ -120,6 +123,7 @@
           <label for="genre">ジャンル</label>
             <b-form-select
               id="genre"
+              class="custom-b-select-option"
               v-model="genre"
               required
               :state="isValidGenre"
@@ -132,6 +136,7 @@
               <option value="fantasy">ファンタジー</option>
               <option value="horror">ホラー</option>
               <option value="romance">恋愛</option>
+              <option value="other">その他</option>
             </b-form-select>
           <b-form-invalid-feedback
             id="genre-error"
@@ -188,6 +193,7 @@
             この画像ファイルは選択できません。
           </b-form-invalid-feedback>
           <b-img
+            class="custom-b-img"
             :blank="!comicImageFileEncoded"
             blank-color="#ccc"
             height="80"
@@ -223,6 +229,7 @@
             この画像ファイルは選択できません。
           </b-form-invalid-feedback>
           <b-img
+            class="custom-b-img"
             :blank="!frameImageFileEncoded"
             blank-color="#ccc"
             height="80"
@@ -240,7 +247,7 @@
         </p>
         <b-button
           block
-          class="mt-3"
+          class="general-button custom-b-button"
           :disabled="isPosting"
           type="submit"
           @click="onClick"
@@ -308,7 +315,7 @@ export default {
       currentState: IS_DEFAULT,
       title: '',
       author: '',
-      trial_read_url: '',
+      trialReadUrl: '',
       recommendation: '',
       popularity: '',
       genre: '',
@@ -341,8 +348,8 @@ export default {
       return this.author.trim().length > 0;
     },
     isValidTrialReadUrl() {
-      if (!this.validated || !this.trial_read_url) return null;
-      return this.trial_read_url.trim().length > 0;
+      if (!this.validated || !this.trialReadUrl) return null;
+      return this.trialReadUrl.trim().length > 0;
     },
     recommendationQuantity() {
       const recommendationCount = this.comics.filter((comic) => comic.recommendation === 'recommendation').length;
@@ -452,7 +459,7 @@ export default {
       await postComic(
         this.title,
         this.author,
-        this.trial_read_url,
+        this.trialReadUrl,
         this.recommendation,
         this.popularity,
         this.genre,
@@ -495,7 +502,7 @@ export default {
         this.hideModal();
         this.title = '';
         this.author = '';
-        this.trial_read_url = '';
+        this.trialReadUrl = '';
         this.recommendation = '';
         this.popularity = '';
         this.genre = '';
@@ -520,24 +527,28 @@ export default {
 </script>
 
 <style scoped>
-::placeholder {
-  color: #969696;
-}
+/* 登録モーダル個別 */
 #comic-registration {
   display: inline;
 }
-button {
-  padding: 0.4rem 1rem;
-  font-size: 1rem;
-  border-radius: 10px;
-  border: none;
-  background-color: #4c586f;
-  color: #fff;
+#comic-registration button i {
+  margin-right: 0.2rem;
 }
-button:hover {
-    opacity: .8;
+::placeholder {
+  color: #AFAFAF;
 }
-button i {
-  margin-right: 0.1rem;
+::v-deep .custom-b-select-option {
+  font-size: clamp(1.2rem, 3.8vw, 1.6rem);
+}
+::v-deep .custom-b-img {
+  margin-top: 1rem;
+}
+::v-deep .custom-b-button {
+  font-size: clamp(1.2rem, 3.8vw, 1.6rem);
+}
+.btn-secondary:hover {
+  opacity: 0.8;
+  background-color: #4682B4;
+  border-color: transparent;
 }
 </style>

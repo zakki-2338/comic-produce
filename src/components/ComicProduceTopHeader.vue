@@ -1,31 +1,58 @@
 <template>
   <header>
+    <!-- ヘッダー上部 -->
     <div id="header-upper" class="d-flex align-items-center justify-content-between">
+      <!-- ヘッダーロゴ -->
       <h1>
-        <div v-if="!searching && !toGenre">
+        <div v-if="!searching && !toGenre &&!comicFrames">
           <a href="#">漫画紹介サイト</a>
         </div>
-        <div v-else-if="searching && !toGenre">
+        <div v-else-if="searching && !toGenre && !comicFrames">
           <button id="header-logo" @click="returnTopFromSearch">漫画紹介サイト</button>
         </div>
-        <div v-else-if="!searching && toGenre">
+        <div v-else-if="!searching && toGenre && !comicFrames">
           <button id="header-logo" @click="returnTopFromGenre">漫画紹介サイト</button>
         </div>
+        <div v-else-if="!searching && !toGenre && comicFrames">
+          <button id="header-logo" @click="returnTopFromComicFrames">漫画紹介サイト</button>
+        </div>
       </h1>
-      <div id="header-right" class="d-flex justify-content-between align-items-center">
-        <div id="nav-bar">
-          <div v-if="!searching && !toGenre">
-            <ul class="d-flex align-items-center">
-              <li><a @click="handleClick('#popular-comics')">人気作</a></li>
-              <li><a @click="handleClick('#by-genre')">ジャンル別</a></li>
-              <li>
-                <a @click="handleClick('#search-carton-frame')">
-                  コマで探す
-                </a>
-              </li>
-            </ul>
+
+      <!-- ヘッダー上部右側 -->
+      <div
+        id="header-right"
+        :class="{ 'searching-or-to-genre-upper': searching || toGenre }"
+        class="d-flex justify-content-end align-items-center"
+      >
+        <!-- 検索orジャンル別表示時ヘッダー上部ボタン -->
+        <div v-if="searching || toGenre || comicFrames" id="header-right-buttons">
+          <div v-if="currentUID === null">
+            <button
+              class="general-button"
+              type="button"
+              @click="showLoginScreen"
+            >
+              管理者ログイン
+            </button>
+          </div>
+          <div v-else class="d-flex justify-content-between align-items-center">
+            <comic-registration-modal
+              :comics="comics"
+              @add-comic="addComic"
+            >
+            </comic-registration-modal>
+            <button
+              id="log-out"
+              class="general-button"
+              type="button"
+              @click="logOut"
+            >
+              ログアウト
+            </button>
           </div>
         </div>
+
+        <!-- 検索ボックス -->
         <nav id="nav-right" class="d-flex">
           <form
             @submit.prevent="searchHandler"
@@ -44,9 +71,44 @@
         </nav>
       </div>
     </div>
-    <div id="header-lower">
-      <div id="header-lower-nav">
-        <div v-if="!searching && !toGenre">
+
+    <!-- ヘッダー下部 -->
+    <div
+      id="header-lower"
+      :class="{ 'searching-or-to-genre-lower': searching || toGenre || comicFrames }"
+      class="d-flex justify-content-between align-items-center flex-wrap"
+    >
+      <div class="header-lower-buttons">
+        <div v-if="currentUID === null">
+          <button
+            class="general-button"
+            type="button"
+            @click="showLoginScreen"
+          >
+            管理者ログイン
+          </button>
+        </div>
+        <div
+          v-else
+          class="lower-buttons-at-login d-flex justify-content-between align-items-center flex-wrap"
+        >
+          <comic-registration-modal
+            :comics="comics"
+            @add-comic="addComic"
+          >
+          </comic-registration-modal>
+          <button
+            id="log-out"
+            class="general-button"
+            type="button"
+            @click="logOut"
+          >
+            ログアウト
+          </button>
+        </div>
+      </div>
+      <div v-if="!searching && !toGenre && !comicFrames" id="header-lower-nav">
+        <div>
           <ul class="d-flex align-items-center">
             <li><a @click="handleClick('#popular-comics')">人気作</a></li>
             <li><a @click="handleClick('#by-genre')">ジャンル別</a></li>
@@ -56,21 +118,6 @@
               </a>
             </li>
           </ul>
-        </div>
-      </div>
-      <div id="header-lower-lower">
-        <div v-if="currentUID === null">
-          <button id="administrator-login" type="button" v-on:click="showLoginScreen">
-            管理者ログイン
-          </button>
-        </div>
-        <div v-else>
-          <comic-registration-modal
-            :comics="comics"
-            @add-comic="addComic"
-          >
-          </comic-registration-modal>
-          <button id="log-out" type="button" v-on:click="logOut">ログアウト</button>
         </div>
       </div>
     </div>
@@ -99,6 +146,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    comicFrames: {
+      type: Boolean,
+      default: false,
+    },
     comics: {
       type: Array,
       required: true,
@@ -118,6 +169,10 @@ export default {
 
     returnTopFromGenre() {
       this.$emit('return-top-from-genre');
+    },
+
+    returnTopFromComicFrames() {
+      this.$emit('return-top-from-comic-frames');
     },
 
     showLoginScreen() {
@@ -152,11 +207,18 @@ export default {
       this.comicOrAuthor = '';
     },
 
+    comicFramesToSearch() {
+      this.$emit('comic-frames-to-search', this.comicOrAuthor);
+      this.comicOrAuthor = '';
+    },
+
     searchHandler() {
-      if (!this.toGenre) {
+      if (!this.toGenre && !this.comicFrames) {
         this.searchComic();
-      } else if (this.toGenre) {
+      } else if (this.toGenre && !this.comicFrames) {
         this.genreToSearch();
+      } else if (!this.toGenre && this.comicFrames) {
+        this.comicFramesToSearch();
       }
     },
 
@@ -169,118 +231,131 @@ export default {
 </script>
 
 <style scoped>
-/* header */
-header {
-  height: 150px;
-  background-color: #E1E1E1;
-}
-header #header-upper {
-  height: 50%;
-}
-header #header-logo {
-  padding: 0;
-  border: none;
-  background-color: transparent;
-  font-weight: bold;
-  text-decoration: none;
-  color: black;
-}
-header #header-logo:hover{
-  text-decoration: none;
-  opacity: 0.5;
-  cursor: pointer;
-}
-header h1 {
-  white-space: nowrap;
-  overflow: hidden;
-}
-header ul {
-  margin: 0;
-}
+/* ヘッダー共通 */
 header li {
-  margin-left: 0.3rem;
-  padding-left: 0.3rem;
-  border-left: solid 1px #B4B4B4;
+  margin-left: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 0.1rem solid #000000;
 }
 header li:first-child {
   margin-left: 0;
   padding-left: 0;
   border-left: none;
 }
-header input {
-  height: 32px;
-  border-radius: 5px;
-  border: solid 0.1rem black;
+
+/* ヘッダー個別 */
+/* ヘッダー */
+header {
+  padding: 2rem 0.5rem;
+  background-color: #A8DADC;
+}
+
+/* ヘッダー上部 */
+/* ヘッダー上部ヘッダーロゴ */
+header #header-upper h1 {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* ヘッダー上部トップページ以外ヘッダーロゴ */
+header #header-upper h1 #header-logo {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: #000000;
+  font-size: clamp(1.6rem, 5.8vw, 2.4rem);
+  font-weight: bold;
+  text-decoration: none;
+}
+@media (min-width : 768px) {
+  header #header-upper h1 #header-logo:hover{
+    text-decoration: none;
+    opacity: 0.5;
+  }
+}
+
+/* ヘッダー上部右側 */
+header #header-upper #header-right {
+  width: 50%;
+}
+@media (min-width : 768px) {
+  header #header-upper #header-right.searching-or-to-genre-upper {
+    width: 70%;
+  }
+}
+
+header #header-upper #header-right #header-right-buttons {
+  display: none;
+}
+@media (min-width : 768px) {
+  header #header-upper #header-right #header-right-buttons {
+    display: block;
+    margin-right: 1rem;
+  }
+}
+header #header-upper #header-right #header-right-buttons > div {
+  column-gap: 1rem;
+}
+
+/* ヘッダー上部検索ボックス */
+header #header-upper #header-right .search-box {
   position: relative;
 }
-header input:focus {
-  border: solid 0.15rem black;
+header #header-upper #header-right .search-box #header-search-field {
+  width: 100%;
+  height: 3.2rem;
+  border-radius: 0.5rem;
+  border: 0.1rem solid #000000;
 }
-header .search-box button {
+header #header-upper #header-right .search-box #header-search-field:focus {
+  border: 0.2rem solid #000000;
+}
+@media (min-width : 768px) {
+  header #header-upper #header-right .search-box #header-search-field::-webkit-search-cancel-button,
+  header #header-upper #header-right .search-box #header-search-field::-webkit-search-clear-button {
+    position: absolute;
+    right: 10%;
+  }
+}
+header #header-upper #header-right .search-box button {
   position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 0;
+  outline: none;
   border: none;
   background: none;
-  color: black;
+  color: #000000;
 }
+header #header-upper #header-right .search-box button:focus {
+  opacity: 0.5;
+}
+@media (min-width : 768px) {
+  header #header-upper #header-right .search-box button:hover {
+    opacity: 0.5;
+  }
+}
+
+/* ヘッダー下部 */
 header #header-lower {
-  height: 50%;
-}
-#header-lower #header-lower-lower {
   margin-top: 0.5rem;
+  column-gap: 0.5rem;
+  row-gap: 0.5rem;
 }
-#header-lower #header-lower-lower #log-out{
-  margin-left: 1rem;
+
+header #header-lower .header-lower-buttons .lower-buttons-at-login {
+  column-gap: 0.5rem;
+  row-gap: 0.5rem;
 }
-#header-lower-lower button {
-  padding: 0.4rem 1rem;
-  font-size: 1rem;
-  border-radius: 10px;
-  border: none;
-  background-color: #4c586f;
-  color: #fff;
-}
-#header-lower-lower #administrator-login {
-  margin: 0;
-}
-#header-lower-lower button:hover {
-  opacity: 0.8;
-}
-#header-lower-lower button i {
-  margin-right: 0.1rem;
-}
-/* media query */
-@media screen and (max-width: 991px) {
-  ::-webkit-scrollbar {
+
+@media (min-width : 768px) {
+  header #header-lower.searching-or-to-genre-lower .header-lower-buttons {
     display: none;
   }
-  /* header */
-  header {
-    padding: 0 0.5rem;
-  }
-  header #nav-bar {
-    display: none;
-  }
-  header input {
-    padding-right: 2rem;
-  }
-  header .search-box button {
-    right: 10px;
-  }
 }
-@media screen and (min-width: 992px) {
-  /* header */
-  header {
-    padding: 0 1rem;
-  }
-  header input {
-    margin-left: 1rem;
-    padding-right: 1.5rem;
-  }
-  header button {
-    right: 15px;
-  }
-  #header-lower-nav {
-    display: none;
-  }
+
+header #header-lower #header-lower-nav ul li a{
+  font-size: clamp(1.2rem, 3.8vw, 1.6rem);
+  font-weight: bold;
 }
 </style>
